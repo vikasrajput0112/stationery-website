@@ -8,7 +8,7 @@ const Home = () => {
       minHeight: "100vh"
     }}>
       <h1 style={{ color: "#2c3e50" }}>
-        🚀 Welcome to Stationery Store (Updated)
+        🚀 Welcome to Stationery Store-test (Updated)
       </h1>
 
       <p style={{ color: "#e74c3c", fontSize: "18px" }}>
