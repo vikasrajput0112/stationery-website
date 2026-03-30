@@ -8,6 +8,8 @@ pipeline {
     environment {
         IMAGE_NAME = "stationery-app"
         VERSION = "v1.0"
+        CONTAINER_NAME = "stationery-container"
+        PORT = "8054"
     }
 
     stages {
@@ -25,22 +27,26 @@ pipeline {
                     def IMAGE_TAG = "${VERSION}-${TIMESTAMP}"
                     env.FULL_IMAGE = "${IMAGE_NAME}:${IMAGE_TAG}"
 
-                    echo "Generated Image: ${env.FULL_IMAGE}"
+                    echo "🚀 Generated Image: ${env.FULL_IMAGE}"
                 }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $FULL_IMAGE .'
+                sh '''
+                echo "📦 Building Image: $FULL_IMAGE"
+                docker build -t $FULL_IMAGE .
+                docker tag $FULL_IMAGE $IMAGE_NAME:latest
+                '''
             }
         }
 
         stage('Stop & Remove Old Container') {
             steps {
                 sh '''
-                docker stop stationery-container || true
-                docker rm stationery-container || true
+                docker stop $CONTAINER_NAME || true
+                docker rm $CONTAINER_NAME || true
                 '''
             }
         }
@@ -48,22 +54,31 @@ pipeline {
         stage('Run Container') {
             steps {
                 sh '''
-                docker run -d -p 8054:80 --name stationery-container $FULL_IMAGE
+                echo "🚀 Running Container with Image: $FULL_IMAGE"
+                docker run -d -p $PORT:80 --name $CONTAINER_NAME $FULL_IMAGE
                 '''
             }
         }
 
         stage('Verify') {
             steps {
-                sh 'docker ps'
+                sh '''
+                echo "📋 Running Containers:"
+                docker ps
+
+                echo "🔍 Image used by container:"
+                docker inspect $CONTAINER_NAME | grep Image
+                '''
             }
         }
+
         stage('Cleanup Dangling Images') {
-    steps {
-        sh '''
-        docker image prune -f
-        '''
-    }
-}
+            steps {
+                sh '''
+                echo "🧹 Cleaning dangling images..."
+                docker image prune -f
+                '''
+            }
+        }
     }
 }
