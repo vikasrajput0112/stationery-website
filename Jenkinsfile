@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     environment {
         IMAGE = "stationery-app:latest"
         CONTAINER = "stationery-container"
@@ -11,7 +15,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git 'https://github.com/vikasrajput0112/stationery-website.git'
+                git branch: 'main', url: 'https://github.com/vikasrajput0112/stationery-website.git'
             }
         }
 
