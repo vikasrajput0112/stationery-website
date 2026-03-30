@@ -21,9 +21,11 @@ pipeline {
         stage('Generate Tag') {
             steps {
                 script {
-                    TIMESTAMP = sh(script: "date +%Y%m%d%H%M%S", returnStdout: true).trim()
-                    IMAGE_TAG = "${VERSION}-${TIMESTAMP}"
-                    FULL_IMAGE = "${IMAGE_NAME}:${IMAGE_TAG}"
+                    def TIMESTAMP = sh(script: "date +%Y%m%d%H%M%S", returnStdout: true).trim()
+                    def IMAGE_TAG = "${VERSION}-${TIMESTAMP}"
+                    env.FULL_IMAGE = "${IMAGE_NAME}:${IMAGE_TAG}"
+
+                    echo "Generated Image: ${env.FULL_IMAGE}"
                 }
             }
         }
