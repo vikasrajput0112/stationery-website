@@ -58,5 +58,12 @@ pipeline {
                 sh 'docker ps'
             }
         }
+        stage('Cleanup Dangling Images') {
+    steps {
+        sh '''
+        docker image prune -f
+        '''
+    }
+}
     }
 }
