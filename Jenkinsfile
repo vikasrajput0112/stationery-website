@@ -31,18 +31,15 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
-            steps {
-                sh '''
-                echo "📦 Building Image: $FULL_IMAGE"
-
-                # Enable BuildKit for better builds
-                DOCKER_BUILDKIT=1 docker build -t $FULL_IMAGE .
-
-                docker tag $FULL_IMAGE $IMAGE_NAME:latest
-                '''
-            }
-        }
+       stage('Build Docker Image') {
+    steps {
+        sh '''
+        echo "📦 Building Image: $FULL_IMAGE"
+        docker build -t $FULL_IMAGE .
+        docker tag $FULL_IMAGE $IMAGE_NAME:latest
+        '''
+    }
+}
 
         stage('Login to DockerHub') {
             steps {
