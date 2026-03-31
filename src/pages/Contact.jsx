@@ -27,7 +27,7 @@ const Contact = () => {
         {/* Contact Info */}
         <div style={{ marginBottom: "20px" }}>
           <p><strong>Email:</strong> support@stationery.com</p>
-          <p><strong>Phone:</strong> +91-1234567890</p>
+          <p><strong>Phone:</strong> +91-99999-67890</p>
           <p><strong>Address:</strong> Delhi, India</p>
         </div>
 
