@@ -100,10 +100,10 @@ pipeline {
             }
         }
 
-        stage('Keep Only Latest 2 Images') {
+        stage('Keep Only Latest 5 Images') {
             steps {
                 sh '''
-                echo "🧹 Keeping only latest 2 images..."
+                echo "🧹 Keeping only latest 5 images..."
 
                 IMAGES=$(docker images $IMAGE_NAME --format "{{.ID}}" | uniq)
 
@@ -113,7 +113,7 @@ pipeline {
                 do
                   COUNT=$((COUNT+1))
 
-                  if [ $COUNT -gt 2 ]; then
+                  if [ $COUNT -gt 5 ]; then
                     echo "Deleting old image: $IMG"
                     docker rmi -f $IMG || true
                   fi
