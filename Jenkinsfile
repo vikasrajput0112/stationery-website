@@ -6,10 +6,9 @@ pipeline {
     }
 
     environment {
-        IMAGE_NAME = "stationery-app"
+        IMAGE_NAME = "vikasrajput0112/stationery-app"
         VERSION = "v1.0"
-        CONTAINER_NAME = "stationery-container"
-        PORT = "8054"
+        DOCKER_CREDENTIALS = "dockerhub-creds"   // create in Jenkins
     }
 
     stages {
@@ -42,51 +41,60 @@ pipeline {
             }
         }
 
-        stage('Stop & Remove Old Container') {
+        stage('Login to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: "$DOCKER_CREDENTIALS", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                }
+            }
+        }
+
+        stage('Push Image') {
             steps {
                 sh '''
-                docker stop $CONTAINER_NAME || true
-                docker rm $CONTAINER_NAME || true
+                echo "📤 Pushing Image..."
+                docker push $FULL_IMAGE
+                docker push $IMAGE_NAME:latest
                 '''
             }
         }
 
-        stage('Run Container') {
+        stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                echo "🚀 Running Container with Image: $FULL_IMAGE"
-                docker run -d -p $PORT:80 --name $CONTAINER_NAME $FULL_IMAGE
+                echo "🚀 Deploying to Kubernetes..."
+
+                # Update image in deployment dynamically
+                kubectl set image deployment/stationery-deployment \
+                stationery-container=$FULL_IMAGE
+
+                # Apply configs (if first time)
+                kubectl apply -f k8s/deployment.yaml
+                kubectl apply -f k8s/service.yaml
                 '''
             }
         }
 
-        stage('Verify') {
+        stage('Verify Deployment') {
             steps {
                 sh '''
-                echo "📋 Running Containers:"
-                docker ps
-
-                echo "🔍 Image used by container:"
-                docker inspect $CONTAINER_NAME | grep Image
+                kubectl get pods
+                kubectl get svc
                 '''
             }
         }
 
         stage('Cleanup Dangling Images') {
             steps {
-                sh '''
-                echo "🧹 Cleaning dangling images..."
-                docker image prune -f
-                '''
+                sh 'docker image prune -f'
             }
         }
 
-        stage('Keep Only Latest 3 Images') {
+        stage('Keep Only Latest 2 Images') {
             steps {
                 sh '''
-                echo "🧹 Keeping only latest 5 images..."
+                echo "🧹 Keeping only latest 2 images..."
 
-                # Get images sorted by creation date (newest first)
                 IMAGES=$(docker images $IMAGE_NAME --format "{{.ID}}" | uniq)
 
                 COUNT=0
@@ -95,8 +103,7 @@ pipeline {
                 do
                   COUNT=$((COUNT+1))
 
-                  if [ $COUNT -gt 5 ]; then
-                    echo "Deleting old image: $IMG"
+                  if [ $COUNT -gt 2 ]; then
                     docker rmi -f $IMG || true
                   fi
                 done
