@@ -59,21 +59,21 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
-            steps {
-                sh '''
-                echo "🚀 Deploying to Kubernetes..."
+       stage('Deploy to Kubernetes') {
+    steps {
+        sh '''
+        echo "🚀 Deploying to Kubernetes..."
 
-                # Update image in deployment dynamically
-                kubectl set image deployment/stationery-deployment \
-                stationery-container=$FULL_IMAGE
+        # First apply (create deployment if not exists)
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
 
-                # Apply configs (if first time)
-                kubectl apply -f k8s/deployment.yaml
-                kubectl apply -f k8s/service.yaml
-                '''
-            }
-        }
+        # Then update image
+        kubectl set image deployment/stationery-deployment \
+        stationery-container=$FULL_IMAGE
+        '''
+    }
+}
 
         stage('Verify Deployment') {
             steps {
