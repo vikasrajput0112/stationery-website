@@ -36,7 +36,7 @@ pipeline {
             steps {
                 sh '''
                 echo "📦 Building Image: $FULL_IMAGE"
-                docker build -t $FULL_IMAGE .
+                docker build --no-cache -t $FULL_IMAGE .
                 docker tag $FULL_IMAGE $IMAGE_NAME:latest
                 '''
             }
@@ -77,6 +77,29 @@ pipeline {
                 sh '''
                 echo "🧹 Cleaning dangling images..."
                 docker image prune -f
+                '''
+            }
+        }
+
+        stage('Keep Only Latest 3 Images') {
+            steps {
+                sh '''
+                echo "🧹 Keeping only latest 3 images..."
+
+                # Get images sorted by creation date (newest first)
+                IMAGES=$(docker images $IMAGE_NAME --format "{{.ID}}" | uniq)
+
+                COUNT=0
+
+                for IMG in $IMAGES
+                do
+                  COUNT=$((COUNT+1))
+
+                  if [ $COUNT -gt 3 ]; then
+                    echo "Deleting old image: $IMG"
+                    docker rmi -f $IMG || true
+                  fi
+                done
                 '''
             }
         }
