@@ -8,7 +8,7 @@ pipeline {
     environment {
         IMAGE_NAME = "vikas0112/stationery-app"
         VERSION = "v1.0"
-        DOCKER_CREDENTIALS = "dockerhub-creds"   // create in Jenkins
+        DOCKER_CREDENTIALS = "dockerhub-creds"
     }
 
     stages {
@@ -35,7 +35,10 @@ pipeline {
             steps {
                 sh '''
                 echo "📦 Building Image: $FULL_IMAGE"
-                docker build --no-cache -t $FULL_IMAGE .
+
+                # Enable BuildKit for better builds
+                DOCKER_BUILDKIT=1 docker build -t $FULL_IMAGE .
+
                 docker tag $FULL_IMAGE $IMAGE_NAME:latest
                 '''
             }
@@ -59,34 +62,44 @@ pipeline {
             }
         }
 
-       stage('Deploy to Kubernetes') {
-    steps {
-        sh '''
-        echo "🚀 Deploying to Kubernetes..."
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh '''
+                echo "🚀 Deploying to Kubernetes..."
 
-        # First apply (create deployment if not exists)
-        kubectl apply -f k8s/deployment.yaml
-        kubectl apply -f k8s/service.yaml
+                # Apply YAML (first time or updates)
+                kubectl apply -f k8s/deployment.yaml
+                kubectl apply -f k8s/service.yaml
 
-        # Then update image
-        kubectl set image deployment/stationery-deployment \
-        stationery-container=$FULL_IMAGE
-        '''
-    }
-}
+                # Rolling update with new image
+                kubectl set image deployment/stationery-deployment \
+                stationery-container=$FULL_IMAGE
+                '''
+            }
+        }
 
         stage('Verify Deployment') {
             steps {
                 sh '''
+                echo "📋 Checking Kubernetes resources..."
                 kubectl get pods
                 kubectl get svc
                 '''
             }
         }
 
-        stage('Cleanup Dangling Images') {
+        stage('Cleanup Docker (Advanced)') {
             steps {
-                sh 'docker image prune -f'
+                sh '''
+                echo "🧹 Removing dangling images..."
+                docker image prune -f
+
+                echo "🧹 Removing unused images older than 1 hour..."
+                docker image prune -a -f --filter "until=1h"
+
+                echo "🧹 Removing build cache..."
+                docker builder prune -f
+                '''
             }
         }
 
@@ -104,6 +117,7 @@ pipeline {
                   COUNT=$((COUNT+1))
 
                   if [ $COUNT -gt 2 ]; then
+                    echo "Deleting old image: $IMG"
                     docker rmi -f $IMG || true
                   fi
                 done
