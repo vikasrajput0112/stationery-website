@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        IMAGE_NAME = "vikasrajput0112/stationery-app"
+        IMAGE_NAME = "vikas0112/stationery-app"
         VERSION = "v1.0"
         DOCKER_CREDENTIALS = "dockerhub-creds"   // create in Jenkins
     }
